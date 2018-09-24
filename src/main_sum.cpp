@@ -1,6 +1,10 @@
 #include <libutils/misc.h>
 #include <libutils/timer.h>
 #include <libutils/fast_random.h>
+#include <libgpu/context.h>
+#include <libgpu/shared_device_buffer.h>
+
+#include "cl/sum_cl.h"
 
 
 template<typename T>
@@ -20,7 +24,7 @@ int main(int argc, char **argv)
     int benchmarkingIters = 10;
 
     unsigned int reference_sum = 0;
-    unsigned int n = 100*1000*1000;
+    unsigned int n = 100 * 1000 * 1000;
     std::vector<unsigned int> as(n, 0);
     FastRandom r(42);
     for (int i = 0; i < n; ++i) {
@@ -58,7 +62,35 @@ int main(int argc, char **argv)
     }
 
     {
-        // TODO: implement on OpenCL
-        // gpu::Device device = gpu::chooseGPUDevice(argc, argv);
+         gpu::Device device = gpu::chooseGPUDevice(argc, argv);
+         gpu::Context context;
+         context.init(device.device_id_opencl);
+         context.activate();
+
+         ocl::Kernel kernel(sum_kernel, sum_kernel_length, "sum");
+         kernel.compile(false);
+         
+         unsigned int workGroupSize = 256;
+         unsigned int global_work_size = (n + workGroupSize - 1) / workGroupSize * workGroupSize;
+         auto work_size = gpu::WorkSize(workGroupSize, global_work_size);
+
+         gpu::gpu_mem_32u as_gpu= gpu::gpu_mem_32u::createN(n);
+         as_gpu.writeN(as.data(), as.size());
+         
+         gpu::gpu_mem_32u sum_gpu = gpu::gpu_mem_32u::createN(1);
+
+         timer t;
+         for (int iter = 0; iter < benchmarkingIters; ++iter) {
+             unsigned sum = 0;
+             sum_gpu.writeN(&sum, 1);
+             kernel.exec(work_size, as_gpu, n, sum_gpu);
+             sum_gpu.readN(&sum, 1);
+             EXPECT_THE_SAME(reference_sum, sum, "GPU OpenCL result should be consistent!");
+             t.nextLap();
+         }
+         std::cout << "GPU OCL: " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;
+         std::cout << "GPU OCL: " << (n / 1000.0 / 1000.0) / t.lapAvg() << " millions/s" << std::endl;
     }
+
+    return 0;
 }
