@@ -74,7 +74,7 @@ int main(int argc, char **argv)
          unsigned int global_work_size = (n + workGroupSize - 1) / workGroupSize * workGroupSize;
          auto work_size = gpu::WorkSize(workGroupSize, global_work_size);
 
-         gpu::gpu_mem_32u as_gpu= gpu::gpu_mem_32u::createN(n);
+         gpu::gpu_mem_32u as_gpu = gpu::gpu_mem_32u::createN(n);
          as_gpu.writeN(as.data(), as.size());
          
          gpu::gpu_mem_32u sum_gpu = gpu::gpu_mem_32u::createN(1);
