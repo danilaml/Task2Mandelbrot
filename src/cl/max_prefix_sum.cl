@@ -82,7 +82,9 @@ __kernel void find_max(const __global int *xs, const int n, __global int *max_re
         }
         barrier(CLK_LOCAL_MEM_FENCE);
     }
-    atomic_max(max_res, local_xs[0]);
+    if (local_xs[0] > *max_res) {
+        atomic_max(max_res, local_xs[0]);
+    }
     if (globalId + 1 == n) {
         atomic_max(max_res, last + xs[globalId]);
     }

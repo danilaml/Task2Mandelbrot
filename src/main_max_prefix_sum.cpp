@@ -39,6 +39,20 @@ int main(int argc, char **argv)
 {
     int benchmarkingIters = 10;
     int max_n = (1 << 24);
+    
+    gpu::Device device = gpu::chooseGPUDevice(argc, argv);
+    gpu::Context context;
+    context.init(device.device_id_opencl);
+    context.activate();
+
+    ocl::Kernel calc_prefs(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "calc_prefs");
+    ocl::Kernel add_sums(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "add_sums");
+    ocl::Kernel find_max(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "find_max");
+    ocl::Kernel find_index(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "find_index");
+    calc_prefs.compile();
+    add_sums.compile();
+    find_max.compile();
+    find_index.compile();
 
     for (int n = 2; n <= max_n; n *= 2) {
         std::cout << "______________________________________________" << std::endl;
@@ -91,19 +105,6 @@ int main(int argc, char **argv)
         }
 
         {
-            gpu::Device device = gpu::chooseGPUDevice(argc, argv);
-            gpu::Context context;
-            context.init(device.device_id_opencl);
-            context.activate();
-
-            ocl::Kernel calc_prefs(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "calc_prefs");
-            ocl::Kernel add_sums(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "add_sums");
-            ocl::Kernel find_max(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "find_max");
-            ocl::Kernel find_index(max_prefix_sum_kernel, max_prefix_sum_kernel_length, "find_index");
-            calc_prefs.compile();
-            add_sums.compile();
-            find_max.compile();
-            find_index.compile();
 
             unsigned int workGroupSize = WORK_GROUP_SIZE;
             unsigned int global_work_size = (n + workGroupSize - 1) / workGroupSize * workGroupSize;
