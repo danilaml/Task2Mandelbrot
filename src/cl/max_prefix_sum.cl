@@ -46,8 +46,10 @@ __kernel void calc_prefs(__global int *xs
     }
 
     barrier(CLK_LOCAL_MEM_FENCE);
-    xs[2 * globalId] = local_xs[2 * localId];
-    xs[2 * globalId + 1] = local_xs[2 * localId + 1];
+    if (2 * globalId + 1 < n) {
+        xs[2 * globalId] = local_xs[2 * localId];
+        xs[2 * globalId + 1] = local_xs[2 * localId + 1];
+    }
     if (localId == 0 && is_not_last) {
         sums[get_group_id(0)] = local_xs[WORK_GROUP_SIZE * 2 - 1] + last_x;
     }
