@@ -19,7 +19,7 @@ void raiseFail(const T &a, const T &b, std::string message, std::string filename
 
 constexpr unsigned WORK_GROUP_SIZE = 256;
 
-void computePrefixes(const gpu::gpu_mem_32i &xs
+static void computePrefixes(const gpu::gpu_mem_32i &xs
                     , int n
                     , ocl::Kernel &calc_prefs
                     , ocl::Kernel &add_sums) {
@@ -28,7 +28,7 @@ void computePrefixes(const gpu::gpu_mem_32i &xs
     } else {
         const auto sums_size = n / 2 / WORK_GROUP_SIZE;
         auto sums = gpu::gpu_mem_32i::createN(sums_size);
-        calc_prefs.exec(gpu::WorkSize(WORK_GROUP_SIZE, n / 2), xs, n, sums, n == 1024 ? 2 : 1);
+        calc_prefs.exec(gpu::WorkSize(WORK_GROUP_SIZE, n / 2), xs, n, sums, 1);
         computePrefixes(sums, sums_size, calc_prefs, add_sums);
         add_sums.exec(gpu::WorkSize(WORK_GROUP_SIZE, n / 2), xs, sums);
     }
