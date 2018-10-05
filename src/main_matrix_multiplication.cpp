@@ -10,8 +10,6 @@
 #include <iostream>
 #include <stdexcept>
 
-#include <iomanip>
-
 int main(int argc, char **argv)
 {
     gpu::Device device = gpu::chooseGPUDevice(argc, argv);

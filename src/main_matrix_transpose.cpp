@@ -50,7 +50,6 @@ int main(int argc, char **argv)
 
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
-            // TODO
             matrix_transpose_kernel.exec(work_size, as_gpu, as_t_gpu, M, K);
 
             t.nextLap();
