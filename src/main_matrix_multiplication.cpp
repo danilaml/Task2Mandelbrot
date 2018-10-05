@@ -10,6 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#include <iomanip>
 
 int main(int argc, char **argv)
 {
@@ -58,7 +59,6 @@ int main(int argc, char **argv)
 
     const std::vector<float> cs_cpu_reference = cs;
 
-    /*
     gpu::gpu_mem_32f as_gpu, bs_gpu, cs_gpu;
     as_gpu.resizeN(M*K);
     bs_gpu.resizeN(K*N);
@@ -71,12 +71,15 @@ int main(int argc, char **argv)
     matrix_multiplication_kernel.compile();
 
     {
+        unsigned int wg_sizeX = 16;
+        unsigned int wg_sizeY = 16;
+        unsigned int work_sizeX = (M + wg_sizeX - 1) / wg_sizeX * wg_sizeX; // HANDLE N?
+        unsigned int work_sizeY = (K + wg_sizeY - 1) / wg_sizeY * wg_sizeY;
+        auto work_size = gpu::WorkSize(wg_sizeX, wg_sizeY, work_sizeX, work_sizeY);
+
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
-            // TODO
-            unsigned int work_group_size = 128;
-            unsigned int global_work_size = ...;
-            matrix_multiplication_kernel.exec(gpu::WorkSize(work_group_size, global_work_size), as_gpu, bs_gpu, cs_gpu, M, K, N);
+            matrix_multiplication_kernel.exec(work_size, as_gpu, bs_gpu, cs_gpu, M, K, N);
 
             t.nextLap();
         }
@@ -85,7 +88,6 @@ int main(int argc, char **argv)
     }
 
     cs_gpu.readN(cs.data(), M*N);
-    */
 
     // Проверяем корректность результатов
     double diff_sum = 0;
