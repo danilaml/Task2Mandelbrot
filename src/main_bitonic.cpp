@@ -10,7 +10,7 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
-#include <climits>
+#include <cfloat>
 
 template<typename T>
 void raiseFail(const T &a, const T &b, std::string message, std::string filename, int line)
