@@ -105,8 +105,6 @@ int main(int argc, char **argv)
         bits_gpu.resizeN(new_n);
         sorted_gpu.resizeN(new_n);
 
-        std::vector<unsigned> debug(n);
-
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
             as_gpu.writeN(as.data(), n);
@@ -117,8 +115,6 @@ int main(int argc, char **argv)
                 radix_bits.exec(work_size, as_gpu, bits_gpu, n, mask);
                 computePrefixes(bits_gpu, new_n, calc_prefs, add_sums);
                 radix_sort.exec(work_size, as_gpu, sorted_gpu, bits_gpu, n, mask);
-                bits_gpu.readN(debug.data(), n);
-                sorted_gpu.readN(debug.data(), n);
                 as_gpu.swap(sorted_gpu);
             }
 
