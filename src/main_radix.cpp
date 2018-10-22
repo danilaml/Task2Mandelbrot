@@ -29,7 +29,7 @@ static void computePrefixes(const gpu::gpu_mem_32u &xs
     , int n
     , ocl::Kernel &calc_prefs
     , ocl::Kernel &add_sums) {
-    if (n <= WORK_GROUP_SIZE * 2) {
+    if (n <= WORK_GROUP_SIZE * 4) {
         calc_prefs.exec(gpu::WorkSize(WORK_GROUP_SIZE, n / 2), xs, n, xs, 0);
     }
     else {
