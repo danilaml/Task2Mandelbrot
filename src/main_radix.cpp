@@ -101,8 +101,10 @@ int main(int argc, char **argv)
         
         const auto new_n = next_pow2(n);
         gpu::gpu_mem_32u bits_gpu;
+        gpu::gpu_mem_32u new_bits_gpu;
         gpu::gpu_mem_32u sorted_gpu;
         bits_gpu.resizeN(new_n);
+        new_bits_gpu.resizeN(new_n);
         sorted_gpu.resizeN(new_n);
 
         timer t;
@@ -111,11 +113,12 @@ int main(int argc, char **argv)
 
             t.restart(); // Запускаем секундомер после прогрузки данных чтобы замерять время работы кернела, а не трансфер данных
 
+            radix_bits.exec(work_size, as_gpu, bits_gpu, n, 1);
             for (unsigned mask = 1; mask != 0; mask <<= 1) {
-                radix_bits.exec(work_size, as_gpu, bits_gpu, n, mask);
                 computePrefixes(bits_gpu, new_n, calc_prefs, add_sums);
-                radix_sort.exec(work_size, as_gpu, sorted_gpu, bits_gpu, n, mask);
+                radix_sort.exec(work_size, as_gpu, sorted_gpu, bits_gpu, new_bits_gpu, n, mask);
                 as_gpu.swap(sorted_gpu);
+                bits_gpu.swap(new_bits_gpu);
             }
 
             t.nextLap();

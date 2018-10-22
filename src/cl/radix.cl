@@ -8,7 +8,7 @@ __kernel void radix_bits(const __global unsigned *as, __global unsigned *bits, u
     bits[g_id] = (as[g_id] & mask) ? 0 : 1;
 }
 
-__kernel void radix_sort(const __global unsigned *as, __global unsigned *sorted, const __global unsigned *inds, unsigned n, unsigned mask)
+__kernel void radix_sort(const __global unsigned *as, __global unsigned *sorted, const __global unsigned *inds, __global unsigned *new_bits, unsigned n, unsigned mask)
 {
     const unsigned g_id = get_global_id(0);
     if (g_id >= n)
@@ -21,6 +21,8 @@ __kernel void radix_sort(const __global unsigned *as, __global unsigned *sorted,
     }
 
     sorted[ind] = a;
+    if (mask << 1)
+        new_bits[ind] = (a & (mask << 1)) ? 0 : 1;
 }
 
 __kernel void calc_prefs(__global unsigned *xs
