@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
-            as_gpu.writeN(as.data(), n); // TODO: remove
+            as_gpu.writeN(as.data(), n);
 
             t.restart(); // Запускаем секундомер после прогрузки данных чтобы замерять время работы кернела, а не трансфер данных
 
@@ -122,7 +122,6 @@ int main(int argc, char **argv)
                 as_gpu.swap(sorted_gpu);
             }
 
-            //radix.exec(work_size, as_gpu, n);
             t.nextLap();
         }
         std::cout << "GPU: " << t.lapAvg() << "+-" << t.lapStd() << " s" << std::endl;

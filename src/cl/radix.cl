@@ -19,9 +19,8 @@ __kernel void radix_sort(const __global unsigned *as, __global unsigned *sorted,
     if (a & mask) {
         ind = total + g_id - ind;
     }
-    //printf("g_id: %d, ind: %d, total: %d, a & mask: %d\n", g_id, ind, total, a & mask);
+
     sorted[ind] = a;
-    //bits[get_global_id(0)] = as[get_global_id(0)] & mask;
 }
 
 __kernel void calc_prefs(__global unsigned *xs
