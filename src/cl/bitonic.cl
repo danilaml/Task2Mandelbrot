@@ -48,7 +48,7 @@ __kernel void bitonic_global_fst(__global float *as, unsigned n, unsigned k) {
     const size_t global_i = get_global_id(0);
     const unsigned offset = global_i * 2 / k;
     const unsigned k_i = global_i % (k / 2);
-    if (offset * k + k - 1 - k_i < n && k_i < k/2) {
+    if (offset * k + k - 1 - k_i < n) {
         float a = as[offset * k + k_i];
         float b = as[offset * k + k - 1 - k_i];
         if (a > b) {
