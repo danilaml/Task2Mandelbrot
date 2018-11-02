@@ -67,6 +67,8 @@ int main(int argc, char **argv)
         ocl::Kernel get_merge_path(merge_kernel, merge_kernel_length, "get_merge_path");
         bitonic_local.compile();
         merge.compile();
+        merge_mp.compile();
+        get_merge_path.compile();
 
         const unsigned int workGroupSize = 256;
         const auto bitonic_work_size = gpu::WorkSize(workGroupSize, (n + workGroupSize - 1) / workGroupSize * workGroupSize);

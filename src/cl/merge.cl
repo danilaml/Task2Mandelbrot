@@ -13,7 +13,7 @@ __kernel void bitonic_local(__global float *as, unsigned n)
     for (unsigned k = 2; k <= WG_SIZE * 2; k *= 2) {
         const unsigned offset = local_i * 2 / k;
         const unsigned k_i = local_i % (k / 2);
-        if (offset * k + k - 1 - k_i < n) {
+        if (offset * k + k - 1 - k_i < WG_SIZE * 2) {
             const float a = local_xs[offset * k + k_i];
             const float b = local_xs[offset * k + k - 1 - k_i];
             if (a > b) {
@@ -25,7 +25,7 @@ __kernel void bitonic_local(__global float *as, unsigned n)
         for (unsigned st = k / 4; st >= 1; st /= 2) {
             const unsigned offset_st = local_i / st;
             const unsigned st_i = local_i % st;
-            if (offset_st * 2 * st + st_i + st < n && st_i < st) {
+            if (offset_st * 2 * st + st_i + st < WG_SIZE * 2) {
                 const float a = local_xs[offset_st * 2 * st + st_i];
                 const float b = local_xs[offset_st * 2 * st + st_i + st];
                 if (a > b) {
@@ -53,9 +53,9 @@ int merge_path(const __global float *a,
     int end = min(diag, (int)aCount);
 
     while (beg < end) {
-        int mid = (beg + end) / 2u;
-        if (a[mid] <= b[diag - 1u - mid]) {
-            beg = mid + 1u;
+        int mid = (beg + end) / 2;
+        if (a[mid] <= b[diag - 1 - mid]) {
+            beg = mid + 1;
         } else {
             end = mid;
         }
@@ -77,6 +77,8 @@ __kernel void merge(const __global float *as, __global float *res, unsigned coun
     unsigned curB = diag - mp;
     float aValue = a[curA];
     float bValue = b[curB];
+    
+    #pragma unroll 4
     for (unsigned i = 0; i < items_per_wi; ++i) {
         if ((curB >= count) || ((curA < count) && aValue <= bValue)) {
             res[offset + diag + i] = aValue;
@@ -89,23 +91,21 @@ __kernel void merge(const __global float *as, __global float *res, unsigned coun
 }
 
 __kernel void merge_mp(const __global float *as, const __global int *mps, __global float *res, unsigned n, unsigned count) {
-    const unsigned global_id = get_global_id(0);
     const unsigned group_id = get_group_id(0);
     const unsigned local_id = get_local_id(0);
 
     const unsigned array_id = (group_id * 256 * 8) / (2 * count);
-    const unsigned id_in_array = (group_id * 256 * 8) % (2 * count); 
-    const int gl_diag = id_in_array;
+    const unsigned gl_diag = (group_id * 256 * 8) % (2 * count); 
 
     const unsigned gl_offset = array_id * count * 2;
 
     const __global float *gl_a = as + gl_offset;
     const __global float *gl_b = as + gl_offset + count;
 
-    const int gl_mp = mps[global_id / 256];
+    const int gl_mp = mps[group_id];
     const unsigned a0 = gl_mp;
     const unsigned b0 = gl_diag - gl_mp;
-    const int gl_mp_nxt = ((group_id + 1) % (count / 1024) == 0) ? count : mps[global_id / 256 + 1];
+    const int gl_mp_nxt = ((group_id + 1) % (count / 1024) == 0) ? count : mps[group_id + 1];
     const unsigned aCount = gl_mp_nxt - a0;
     const unsigned bCount = (gl_diag + 2048 - gl_mp_nxt) - b0;
 
@@ -119,6 +119,8 @@ __kernel void merge_mp(const __global float *as, const __global int *mps, __glob
     unsigned curB = diag - mp;
     float aValue = a[curA];
     float bValue = b[curB];
+    
+    #pragma unroll items_per_wi
     for (unsigned i = 0; i < items_per_wi; ++i) {
         if ((curB >= bCount) || ((curA < aCount) && aValue <= bValue)) {
             res[gl_offset + gl_diag + diag + i] = aValue;
