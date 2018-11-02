@@ -55,17 +55,22 @@ int main(int argc, char **argv)
 
     gpu::gpu_mem_32f as_gpu;
     gpu::gpu_mem_32f res_gpu;
+    gpu::gpu_mem_32i mp_gpu;
     as_gpu.resizeN(n);
     res_gpu.resizeN(n);
+    mp_gpu.resizeN(n / 4);
 
     {
         ocl::Kernel bitonic_local(merge_kernel, merge_kernel_length, "bitonic_local");
         ocl::Kernel merge(merge_kernel, merge_kernel_length, "merge");
+        ocl::Kernel merge_mp(merge_kernel, merge_kernel_length, "merge_mp");
+        ocl::Kernel get_merge_path(merge_kernel, merge_kernel_length, "get_merge_path");
         bitonic_local.compile();
         merge.compile();
 
-        unsigned int workGroupSize = 256;
-        auto bitonic_work_size = gpu::WorkSize(workGroupSize, (n + workGroupSize - 1) / workGroupSize * workGroupSize);
+        const unsigned int workGroupSize = 256;
+        const auto bitonic_work_size = gpu::WorkSize(workGroupSize, (n + workGroupSize - 1) / workGroupSize * workGroupSize);
+
         timer t;
         for (int iter = 0; iter < benchmarkingIters; ++iter) {
             as_gpu.writeN(as.data(), n);
@@ -74,10 +79,17 @@ int main(int argc, char **argv)
             
             bitonic_local.exec(bitonic_work_size, as_gpu, n); // sorts 512-long chunks
 
-            as_gpu.readN(as.data(), n);
-            for (unsigned count = 512; count < n; count *= 2) {
-                auto work_size = gpu::WorkSize(workGroupSize, n / 2 / count * workGroupSize);
-                merge.exec(work_size, as_gpu, res_gpu, n, count);
+            for (unsigned count = 512; count < n && count <= 4 * workGroupSize; count *= 2) {
+                const auto work_size = gpu::WorkSize(workGroupSize, n / 2 / count * workGroupSize);
+                merge.exec(work_size, as_gpu, res_gpu, count);
+                as_gpu.swap(res_gpu);
+            }
+
+            for (unsigned count = 8 * workGroupSize; count < n; count *= 2) {
+                const auto work_size_paths = gpu::WorkSize(workGroupSize, n / workGroupSize / 8);
+                const auto work_size_merge = gpu::WorkSize(workGroupSize, n / 8);
+                get_merge_path.exec(work_size_paths, as_gpu, mp_gpu, n, count);
+                merge_mp.exec(work_size_merge, as_gpu, mp_gpu, res_gpu, n, count);
                 as_gpu.swap(res_gpu);
             }
 
