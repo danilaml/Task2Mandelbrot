@@ -120,7 +120,7 @@ __kernel void merge_mp(const __global float *as, const __global int *mps, __glob
     float aValue = a[curA];
     float bValue = b[curB];
     
-    #pragma unroll items_per_wi
+    #pragma unroll 8
     for (unsigned i = 0; i < items_per_wi; ++i) {
         if ((curB >= bCount) || ((curA < aCount) && aValue <= bValue)) {
             res[gl_offset + gl_diag + diag + i] = aValue;
